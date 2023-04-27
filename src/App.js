@@ -1,81 +1,60 @@
-import React, { useState } from 'react';
+import React,{useState} from 'react';
 import './App.css';
 import 'tachyons';
+import Help from './Help/Help';
+import Input from './components/Input';
+import DatePicker from 'react-datepicker';
+import 'react-datepicker/dist/react-datepicker.css';
+import DisplayTask from './components/DisplayTask';
 
-function App() {
-  const [todos, setTodos] = useState([]);
-  const [inputText, setInputText] = useState('');
-  const [helptext, setHelpText] = useState('');
+function App(props) {
+    const [todos, setTodos] = useState([]);
+ 
+    const [selectedDate, setSelectedDate] = useState(null);
 
-  const handleInputChange = (e) => {
-    setInputText(e.target.value);
-  };
-
-  const handleAddTodo = () => {
-    if (inputText.trim() === '') return;
-    const newTodo = {
-      text: inputText,
-      completed: false
-    };
-    setTodos([...todos, newTodo]);
-    setInputText('');
-  };
-
-  const handleKeyPress = (e) => {
-    if (e.key === 'Enter') {
-      handleAddTodo();
-    }
-  };
-
-  const handleDeleteTodo = (item) => {
-    let deleteTodo = [...todos];
-    let filtertodo = deleteTodo.filter((todo, i) => {
-      return i!== item;
-    } )
-    setTodos(filtertodo);
-  };
-
-  const handleCheckBox = (i) => {
-    setTodos(todos.map((todo, index) => {
-      if (index === i) {
-        return {
-          ...todo,
-          completed: !todo.completed
-        }
-      }
-      return todo;
-    }));
-  }
-  const onClikHelpButton = (e) =>  {
-    console.log(e);
-    setHelpText('type  a task in  text field and then press Enter. If you want to  mark the task as completed click on check box. if you want to delete click delete buttonrmdir ');
-  }
+    const handleDateChange = (date) => {
+        setSelectedDate(date)
+        fetch('http://localhost:3001/getTask',{
+                  method: 'post',
+                  headers: {'Content-Type': 'application/json'},
+                  body: JSON.stringify({
+                  date: props.selectedDate
+              })
+              
+              }).then(response => response.json())
+              .then(data => {
+              
+                  console.log(data.length)
+                  for(let i = 0;i < data.length;i++){
+                  if (data) {
+                  const newTodos = {
+                      text: ' ' + data[i].task,
+                      completed: data[i].isCompleted
+                  };
+                  setTodos([...todos, newTodos]);
+                  } else {
+                  setTodos([]); // clear the state if no task is found
+                  }
+                  }
+                  // update the state with the new task
+              
+              })
+              .catch(error => {
+              console.error('Error fetching task:', error);
+              })
+          }
 
   return (
     <div className='tc'>
       <h1 className='f1'>Todo App</h1>
-      <p>{helptext}</p>
-      <button onClick={onClikHelpButton}>help</button>
-      <div>
-        <input className='br3 pa2 shadow-5 tc'
-          type="text"
-          value={inputText}
-          onChange={handleInputChange}
-          onKeyDown={handleKeyPress}
-          placeholder="Enter a task..."
-        />
+      <Help />
+      <DatePicker selected={selectedDate} onChange={handleDateChange}  />
+      
+      <Input  />
+      
+      <DisplayTask todos={todos}  setTodos={setTodos}/>
 
       </div>
-      <ul className='tc'>
-        {todos.map((todo, i) => (
-            <li className='ml-0 pa-5' key={i}>
-              <input type='checkbox' checked={todo.completed} onChange={() => handleCheckBox(i)} />
-              {todo.text}
-              {todo.completed && <button className="tc bg-light-green br3 pa-2" onClick={() => handleDeleteTodo(i)}>delete</button>}
-            </li>
-          ))}
-      </ul>
-    </div>
   );
 }
 
